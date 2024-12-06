@@ -39,13 +39,32 @@ jobs:
           gcovr -e tests --json-summary github_page/coverage/coverage-summary.json
           gcovr -e tests --html-details github_page/coverage/index.html
 
-      - name: Create Coverage Badges
+      - name: Create line coverage badge
         uses: jaywcjlove/coverage-badges-cli@main
         with:
+          label: line coverage
           style: flat
           source: github_page/coverage/coverage-summary.json
           output: github_page/coverage/badges/line_coverage.svg
           jsonPath: line_percent
+
+      - name: Create function coverage badge
+        uses: jaywcjlove/coverage-badges-cli@main
+        with:
+          label: function coverage
+          style: flat
+          source: github_page/coverage/coverage-summary.json
+          output: github_page/coverage/badges/func_coverage.svg
+          jsonPath: function_percent
+
+      - name: Create branch coverage badge
+        uses: jaywcjlove/coverage-badges-cli@main
+        with:
+          label: branch coverage
+          style: flat
+          source: github_page/coverage/coverage-summary.json
+          output: github_page/coverage/badges/branch_coverage.svg
+          jsonPath: branch_percent
 
       - name: Upload test coverage artifacts
         id: deployment
