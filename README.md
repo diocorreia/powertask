@@ -1,5 +1,6 @@
 # PowerTask - A Simple Energy Aware Task Scheduler
 [![Line Coverage](https://diocorreia.github.io/powertask/coverage/badges/line_coverage.svg)](https://diocorreia.github.io/powertask/coverage/)
+[![Branch Coverage](https://diocorreia.github.io/powertask/coverage/badges/branch_coverage.svg)](https://diocorreia.github.io/powertask/coverage/)
 
 >[!warning]
 > This library is still under development.
