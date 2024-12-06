@@ -55,12 +55,18 @@ void powertask_add(powertask_scheduler *sched, powertask_task *task){
 void powertask_run_scheduler(powertask_scheduler *sched){
 
     int i = 0;
+    int complete_tasks = 0;
     powertask_task *current_task;
 
     load_current_state(sched);
 
     for(;i < sched->number_of_tasks; i++){
         current_task = sched->list_of_tasks[i];
+
+        if(current_task->complete){
+            complete_tasks++;
+            continue;
+        }
 
         int available_energy = powertask_get_available_energy();
 
@@ -75,10 +81,11 @@ void powertask_run_scheduler(powertask_scheduler *sched){
         if(current_task->action != NULL){
             current_task->action();
             current_task->complete = true;
+            complete_tasks++;
         }
     }
 
-    if(i == sched->number_of_tasks){
+    if(complete_tasks == sched->number_of_tasks){
         reset_current_state(sched);
     }
 
