@@ -36,8 +36,8 @@ jobs:
       - name: Check Test Coverage
         run: |
           mkdir -p github_page/coverage
-          gcovr --json-summary github_page/coverage/coverage-summary.json
-          gcovr --html-details github_page/coverage/index.html
+          gcovr -e tests --json-summary github_page/coverage/coverage-summary.json
+          gcovr -e tests --html-details github_page/coverage/index.html
 
       - name: Create Coverage Badges
         uses: jaywcjlove/coverage-badges-cli@main
