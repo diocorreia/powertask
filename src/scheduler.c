@@ -5,6 +5,13 @@
 #include <powertask/storage.h>
 
 #define TASK_SCHEDULER_MAX_NUMBER_OF_TASKS 255
+#define ARRAY_LENGTH(x) (sizeof(x) / sizeof((x)[0]))
+
+/** @brief Current scheduler state*/
+struct current_state_s {
+    bool tasks_state[TASK_SCHEDULER_MAX_NUMBER_OF_TASKS]; /**< Array containing current task states. */
+    int number_of_tasks; /**< Number of valid elements in tasks_state. */
+};
 
 /* ------------------------------------------------------------------------------------------------------------------ */
 /*                                                    Private API                                                     */
@@ -17,26 +24,37 @@ static void reset_current_state(powertask_scheduler *sched){
 }
 
 static void save_current_state(powertask_scheduler *sched){
-    bool tasks_state[TASK_SCHEDULER_MAX_NUMBER_OF_TASKS];
+    struct current_state_s to_save;
 
-    for(int i = 0; i < sched->number_of_tasks; i++){
-        tasks_state[i] = sched->list_of_tasks[i]->complete;
-    }
-
-    powertask_storage_save(tasks_state, sizeof(tasks_state));
-}
-
-static void load_current_state(powertask_scheduler *sched){
-    bool tasks_state[TASK_SCHEDULER_MAX_NUMBER_OF_TASKS];
-    
-    powertask_storage_load(tasks_state, sizeof(tasks_state));
-
-    if(sched->number_of_tasks > TASK_SCHEDULER_MAX_NUMBER_OF_TASKS){
+    if(sched->number_of_tasks > ARRAY_LENGTH(to_save.tasks_state)){
         return;
     }
 
+    to_save.number_of_tasks = sched->number_of_tasks;
+
     for(int i = 0; i < sched->number_of_tasks; i++){
-        sched->list_of_tasks[i]->complete = tasks_state[i];
+        to_save.tasks_state[i] = sched->list_of_tasks[i]->complete;
+    }
+
+    powertask_storage_save(&to_save, sizeof(struct current_state_s));
+}
+
+static void load_current_state(powertask_scheduler *sched){
+    int err = 0;
+    struct current_state_s loaded;
+    
+    err = powertask_storage_load(&loaded, sizeof(struct current_state_s));
+    
+    if(err < 0){
+        return;
+    }
+
+    if(loaded.number_of_tasks > sched->_list_of_tasks_len){
+        return;
+    }
+
+    for(int i = 0; i < loaded.number_of_tasks; i++){
+        sched->list_of_tasks[i]->complete = loaded.tasks_state[i];
     }
 }
 
