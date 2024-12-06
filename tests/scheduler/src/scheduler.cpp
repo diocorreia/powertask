@@ -294,3 +294,56 @@ TEST(test_scheduler_regular, test_schedular_state_is_reset_after_all_tasks_are_c
 
 	mock().checkExpectations();
 };
+
+TEST(test_scheduler_regular, test_schedular_current_state_is_stored){
+	const int required_energy = 400;
+
+	POWERTASK_INIT(scheduler, 2);
+
+	POWERTASK_TASK(scheduler, task1, task1, POWERTASK_RUN_ALWAYS, required_energy);
+	POWERTASK_TASK(scheduler, task2, task2, POWERTASK_RUN_ALWAYS, required_energy);
+
+	mock().expectOneCall("powertask_get_available_energy").andReturnValue(required_energy+1);
+	mock().expectOneCall("powertask_get_available_energy").andReturnValue(required_energy-1);
+
+	mock().expectOneCall("task1");
+	mock().expectNoCall("task2");
+	mock().expectOneCall("powertask_storage_save");
+	mock().ignoreOtherCalls();
+
+	powertask_run_scheduler(&scheduler);
+
+	mock().expectOneCall("powertask_get_available_energy").andReturnValue(required_energy+1);
+
+	mock().expectNoCall("task1");
+	mock().expectOneCall("task2");
+	mock().expectOneCall("powertask_storage_save");
+
+	powertask_run_scheduler(&scheduler);
+
+	mock().checkExpectations();
+}
+
+
+TEST(test_scheduler_regular, test_schedular_save_current_state_overflow){
+	const int load_current_state_max_number_of_tasks = 255;
+
+	POWERTASK_INIT(scheduler, load_current_state_max_number_of_tasks+1);
+
+	powertask_task task = {
+		.action = task1,
+		.condition = POWERTASK_RUN_ALWAYS,
+		.required_energy = 400
+	};
+
+	for(int i = 0; i < scheduler._list_of_tasks_len; i++){
+		powertask_add(&scheduler, &task);
+	}
+
+	mock().expectNoCall("powertask_storage_save");
+	mock().ignoreOtherCalls();
+
+	powertask_run_scheduler(&scheduler);
+
+	mock().checkExpectations();
+}
