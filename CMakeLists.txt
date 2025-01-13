@@ -8,7 +8,7 @@ project(
 
 add_subdirectory(tests)
 
-add_library(PowerTask STATIC src/scheduler.c)
+add_library(PowerTask STATIC src/scheduler.c src/energy.c)
 
 target_include_directories(PowerTask PUBLIC include)
 
