@@ -6,10 +6,12 @@
 #define MAX_FAKE_STORAGE_LEN 1024
 
 extern "C" {
+    #include <powertask/energy.h>
+
     static uint8_t fake_storage[MAX_FAKE_STORAGE_LEN];
     static size_t fake_storage_used;
 
-    int powertask_get_available_energy(){
+    int powertask_get_available_energy(powertask_energy_source_t *energy_source){
         return mock().actualCall("powertask_get_available_energy").returnIntValue();
     }
 
