@@ -2,6 +2,7 @@
 #define POWERTASK_SCHEDULER_H
 
 #include <stdbool.h>
+#include <powertask/energy.h>
 
 /** @brief Task */
 typedef struct powertask_task_s {
@@ -20,8 +21,11 @@ typedef struct powertask_scheduler_s {
 
 /**
  * @brief Runs the scheduled tasks 
+ * 
+ * @param[in] sched Scheduler instance
+ * @param[in] energy_source Energy source used to run scheduled tasks 
  */
-void powertask_run_scheduler(powertask_scheduler *sched);
+void powertask_run_scheduler(powertask_scheduler *sched, powertask_energy_source_t *energy_source);
 
 /**
  * @brief Add task to a scheduler

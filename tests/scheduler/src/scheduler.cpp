@@ -9,6 +9,7 @@
 extern "C"
 {
 	#include <powertask/scheduler.h>
+	#include <powertask/energy.h>
 }
 
 /* ------------------------------------------------------------------------------------------------------------------ */
@@ -135,7 +136,8 @@ TEST(test_scheduler_regular, test_single_task_enough_energy)
 	mock().expectOneCall("task1");
 	mock().ignoreOtherCalls();
 
-	powertask_run_scheduler(&scheduler);
+	powertask_energy_source_t energy_src = {0};
+	powertask_run_scheduler(&scheduler, &energy_src);
 
 	mock().checkExpectations();
 };
@@ -159,7 +161,8 @@ TEST(test_scheduler_regular, test_single_task_no_energy)
 	mock().expectNoCall("task1");
 	mock().ignoreOtherCalls();
 
-	powertask_run_scheduler(&scheduler);
+	powertask_energy_source_t energy_src = {0};
+	powertask_run_scheduler(&scheduler, &energy_src);
 
 	mock().checkExpectations();
 };
@@ -183,7 +186,8 @@ TEST(test_scheduler_regular, test_single_task_condition_success)
 	mock().expectOneCall("task1");
 	mock().ignoreOtherCalls();
 
-	powertask_run_scheduler(&scheduler);
+	powertask_energy_source_t energy_src = {0};
+	powertask_run_scheduler(&scheduler, &energy_src);
 
 	mock().checkExpectations();
 };
@@ -208,7 +212,8 @@ TEST(test_scheduler_regular, test_single_task_condition_fails)
 	mock().expectNoCall("task1");
 	mock().ignoreOtherCalls();
 
-	powertask_run_scheduler(&scheduler);
+	powertask_energy_source_t energy_src = {0};
+	powertask_run_scheduler(&scheduler, &energy_src);
 
 	mock().checkExpectations();
 };
@@ -235,7 +240,8 @@ TEST(test_scheduler_regular, test_two_tasks_task2_depends_on_task1_and_task1_not
 	mock().expectNoCall("task2");
 	mock().ignoreOtherCalls();
 
-	powertask_run_scheduler(&scheduler);
+	powertask_energy_source_t energy_src = {0};
+	powertask_run_scheduler(&scheduler, &energy_src);
 
 	mock().checkExpectations();
 };
@@ -261,7 +267,8 @@ TEST(test_scheduler_regular, test_two_tasks_task2_depends_on_task1_and_task1_is_
 	mock().expectOneCall("task2");
 	mock().ignoreOtherCalls();
 
-	powertask_run_scheduler(&scheduler);
+	powertask_energy_source_t energy_src = {0};
+	powertask_run_scheduler(&scheduler, &energy_src);
 
 	mock().checkExpectations();
 };
@@ -287,7 +294,8 @@ TEST(test_scheduler_regular, test_schedular_state_is_reset_after_all_tasks_are_c
 	mock().expectOneCall("task2");
 	mock().ignoreOtherCalls();
 
-	powertask_run_scheduler(&scheduler);
+	powertask_energy_source_t energy_src = {0};
+	powertask_run_scheduler(&scheduler, &energy_src);
 
 	CHECK_FALSE(scheduler.list_of_tasks[0]->complete);
 	CHECK_FALSE(scheduler.list_of_tasks[1]->complete);
@@ -311,7 +319,8 @@ TEST(test_scheduler_regular, test_schedular_current_state_is_stored){
 	mock().expectOneCall("powertask_storage_save");
 	mock().ignoreOtherCalls();
 
-	powertask_run_scheduler(&scheduler);
+	powertask_energy_source_t energy_src = {0};
+	powertask_run_scheduler(&scheduler, &energy_src);
 
 	mock().expectOneCall("powertask_get_available_energy").andReturnValue(required_energy+1);
 
@@ -319,7 +328,7 @@ TEST(test_scheduler_regular, test_schedular_current_state_is_stored){
 	mock().expectOneCall("task2");
 	mock().expectOneCall("powertask_storage_save");
 
-	powertask_run_scheduler(&scheduler);
+	powertask_run_scheduler(&scheduler, &energy_src);
 
 	mock().checkExpectations();
 }
@@ -343,7 +352,8 @@ TEST(test_scheduler_regular, test_schedular_save_current_state_overflow){
 	mock().expectNoCall("powertask_storage_save");
 	mock().ignoreOtherCalls();
 
-	powertask_run_scheduler(&scheduler);
+	powertask_energy_source_t energy_src = {0};
+	powertask_run_scheduler(&scheduler, &energy_src);
 
 	mock().checkExpectations();
 }
