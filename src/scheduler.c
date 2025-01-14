@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <assert.h>
 
 #include <powertask/scheduler.h>
 #include <powertask/energy.h>
@@ -70,11 +71,15 @@ void powertask_add(powertask_scheduler *sched, powertask_task *task){
     return;
 }
 
-void powertask_run_scheduler(powertask_scheduler *sched){
+void powertask_run_scheduler(powertask_scheduler *sched, powertask_energy_source_t *energy_source){
 
     int i = 0;
     int complete_tasks = 0;
     powertask_task *current_task;
+
+    if(sched == NULL || energy_source == NULL){
+        return;
+    }
 
     load_current_state(sched);
 
@@ -86,7 +91,7 @@ void powertask_run_scheduler(powertask_scheduler *sched){
             continue;
         }
 
-        int available_energy = powertask_get_available_energy();
+        int available_energy = powertask_get_available_energy(energy_source);
 
         if(available_energy <= current_task->required_energy){
             continue;

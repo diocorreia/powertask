@@ -29,6 +29,7 @@ jobs:
       - name: Run tests
         run: |
           ./build/tests/scheduler/test_scheduler
+          ./build/tests/energy/test_energy
 
       - name: Install gcovr
         run: sudo apt-get install -y gcovr

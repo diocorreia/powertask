@@ -13,3 +13,4 @@ include_directories(${CMAKE_SOURCE_DIR}/include)
 
 # Add tests
 add_subdirectory(scheduler)
+add_subdirectory(energy)
