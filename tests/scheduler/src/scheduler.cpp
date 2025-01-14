@@ -118,6 +118,33 @@ TEST(test_scheduler_regular, test_scheduler_task_overflow)
 }
 
 /**
+ * @brief Scheduler - run_scheduler with invalid arguments
+ * 
+ * The scope of this unit test is to validate if the function does not proceed
+ * after checking one or more arguments are valid.
+ * 
+ * Is is expected the function to not proceed further than the argument check
+ * and not load the previous scheduler state.
+ */
+TEST(test_scheduler_regular, test_scheduler_run_scheduler_with_invalid_arguments)
+{
+	// Both arguments are NULL
+	powertask_run_scheduler(NULL, NULL);
+
+	// Energy source is NULL
+	POWERTASK_INIT(scheduler, 1);
+	powertask_run_scheduler(&scheduler, NULL);
+
+	// Scheduler is NULL
+	powertask_energy_source_t energy_src = {0}; 
+	powertask_run_scheduler(NULL, &energy_src);
+
+	mock().expectNoCall("powertask_storage_load");
+
+	mock().checkExpectations();
+}
+
+/**
  * @brief Scheduler - Task with more than enough energy
  * 
  * The scope of this unit test is to validate if the scheduled task is executed
