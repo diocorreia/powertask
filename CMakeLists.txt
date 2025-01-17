@@ -6,6 +6,8 @@ project(
     LANGUAGES C
 )
 
+enable_testing()
+
 add_subdirectory(tests)
 
 add_library(PowerTask STATIC src/scheduler.c src/energy.c)
