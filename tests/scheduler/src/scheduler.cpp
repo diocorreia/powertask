@@ -417,3 +417,33 @@ TEST(test_scheduler_regular, test_single_task_with_no_action)
 
 	mock().checkExpectations();
 };
+
+TEST(test_scheduler_regular, test_single_task_with_no_condition)
+{
+	const int required_energy = 400;
+
+	POWERTASK_INIT(scheduler, 2);
+
+	powertask_task task_with_no_condition = {
+		.action = task1,
+		.condition = NULL,
+		.required_energy = required_energy,
+	};
+
+	powertask_add(&scheduler, &task_with_no_condition);
+	
+	/* Having one more task that fails to complete will prevent the scheduler
+     * from reseting its internal state. 
+	 */
+	POWERTASK_TASK(scheduler, task2, task2, condition_fails, required_energy);
+	
+	mock().expectNCalls(2, "powertask_get_available_energy").andReturnValue(required_energy+1);
+	mock().ignoreOtherCalls();
+
+	powertask_energy_source_t energy_src = {0};
+	powertask_run_scheduler(&scheduler, &energy_src);
+
+	CHECK_TRUE(task_with_no_condition.complete);
+
+	mock().checkExpectations();
+};
