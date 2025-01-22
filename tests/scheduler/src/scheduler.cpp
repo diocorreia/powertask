@@ -10,6 +10,8 @@ extern "C"
 {
 	#include <powertask/scheduler.h>
 	#include <powertask/energy.h>
+
+	#include "fake.h"
 }
 
 /* ------------------------------------------------------------------------------------------------------------------ */
@@ -23,6 +25,7 @@ TEST_GROUP(test_scheduler_regular){
 
 	void teardown(){
 		mock().clear();
+		fake_clear_powertask_storage();
 	}
 };
 
@@ -384,3 +387,33 @@ TEST(test_scheduler_regular, test_schedular_save_current_state_overflow){
 
 	mock().checkExpectations();
 }
+
+TEST(test_scheduler_regular, test_single_task_with_no_action)
+{
+	const int required_energy = 400;
+
+	POWERTASK_INIT(scheduler, 2);
+
+	powertask_task task_with_no_action = {
+		.action = NULL,
+		.condition = condition_success,
+		.required_energy = required_energy,
+	};
+
+	powertask_add(&scheduler, &task_with_no_action);
+	
+	/* Having one more task that fails to complete will prevent the scheduler
+     * from reseting its internal state. 
+	 */
+	POWERTASK_TASK(scheduler, task1, task1, condition_fails, required_energy);
+	
+	mock().expectNCalls(2, "powertask_get_available_energy").andReturnValue(required_energy+1);
+	mock().ignoreOtherCalls();
+
+	powertask_energy_source_t energy_src = {0};
+	powertask_run_scheduler(&scheduler, &energy_src);
+
+	CHECK_TRUE(task_with_no_action.complete);
+
+	mock().checkExpectations();
+};
