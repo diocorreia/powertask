@@ -97,8 +97,10 @@ void powertask_run_scheduler(powertask_scheduler *sched, powertask_energy_source
             continue;
         }
 
-        if(!current_task->condition()){
-            continue;
+        if(current_task->condition != NULL) {
+            if(!current_task->condition()){
+                continue;
+            }
         }
 
         if(current_task->action != NULL){
