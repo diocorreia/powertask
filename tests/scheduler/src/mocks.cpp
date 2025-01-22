@@ -37,4 +37,9 @@ extern "C" {
 
         return mock().actualCall("powertask_storage_load").returnIntValue();
     }
+
+    void fake_clear_powertask_storage(void){
+        memset(fake_storage, 0, MAX_FAKE_STORAGE_LEN);
+        fake_storage_used = 0;
+    }
 }
