@@ -447,3 +447,30 @@ TEST(test_scheduler_regular, test_single_task_with_no_condition)
 
 	mock().checkExpectations();
 };
+
+TEST(test_scheduler_regular, test_loaded_current_state_length_mismatch)
+{
+	const int required_energy = 400;
+
+	POWERTASK_INIT(stored_scheduler, 2);
+	POWERTASK_INIT(scheduler, 1);
+
+	POWERTASK_TASK(stored_scheduler, task1, task1, condition_success, required_energy);
+	POWERTASK_TASK(stored_scheduler, task2, task2, condition_fails, required_energy);
+
+	mock().expectNCalls(2, "powertask_get_available_energy").andReturnValue(required_energy+1);
+	mock().ignoreOtherCalls();
+
+	powertask_energy_source_t energy_src = {0};
+	powertask_run_scheduler(&stored_scheduler, &energy_src);
+
+	/* Simulate system reset. Reset current state of the tasks. */
+	task_task1.complete = false;
+	task_task2.complete = false;
+
+	CHECK(scheduler.number_of_tasks == 0);
+
+	powertask_run_scheduler(&scheduler, &energy_src);
+
+	CHECK(scheduler.number_of_tasks == 0);
+};
