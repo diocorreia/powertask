@@ -8,3 +8,5 @@ target_compile_options(test_energy PRIVATE -coverage)
 endif()
 
 target_link_libraries(test_energy CppUTest CppUTestExt PowerTask)
+
+add_test(NAME energy_module COMMAND test_energy)

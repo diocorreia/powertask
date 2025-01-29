@@ -10,6 +10,8 @@ extern "C"
 {
 	#include <powertask/scheduler.h>
 	#include <powertask/energy.h>
+
+	#include "fake.h"
 }
 
 /* ------------------------------------------------------------------------------------------------------------------ */
@@ -23,6 +25,7 @@ TEST_GROUP(test_scheduler_regular){
 
 	void teardown(){
 		mock().clear();
+		fake_clear_powertask_storage();
 	}
 };
 
@@ -115,6 +118,33 @@ TEST(test_scheduler_regular, test_scheduler_task_overflow)
 
 	CHECK_EQUAL(1, scheduler.number_of_tasks);
 	CHECK_EQUAL(&task_task1,scheduler.list_of_tasks[0]);
+}
+
+/**
+ * @brief Scheduler - run_scheduler with invalid arguments
+ * 
+ * The scope of this unit test is to validate if the function does not proceed
+ * after checking one or more arguments are valid.
+ * 
+ * Is is expected the function to not proceed further than the argument check
+ * and not load the previous scheduler state.
+ */
+TEST(test_scheduler_regular, test_scheduler_run_scheduler_with_invalid_arguments)
+{
+	// Both arguments are NULL
+	powertask_run_scheduler(NULL, NULL);
+
+	// Energy source is NULL
+	POWERTASK_INIT(scheduler, 1);
+	powertask_run_scheduler(&scheduler, NULL);
+
+	// Scheduler is NULL
+	powertask_energy_source_t energy_src = {0}; 
+	powertask_run_scheduler(NULL, &energy_src);
+
+	mock().expectNoCall("powertask_storage_load");
+
+	mock().checkExpectations();
 }
 
 /**
@@ -303,6 +333,16 @@ TEST(test_scheduler_regular, test_schedular_state_is_reset_after_all_tasks_are_c
 	mock().checkExpectations();
 };
 
+/**
+ * @brief Scheduler - Store current state successfully
+ * 
+ * The scope of this test is to validate if the current state of the tasks
+ * (complete or not complete) is stored after the scheduler is ran. And that
+ * these states are correctly loaded on the second execution of the scheduler.
+ * 
+ * It is expected task1 to be executed on the first run of the scheduler and
+ * task2 on the second.
+*/
 TEST(test_scheduler_regular, test_schedular_current_state_is_stored){
 	const int required_energy = 400;
 
@@ -316,24 +356,34 @@ TEST(test_scheduler_regular, test_schedular_current_state_is_stored){
 
 	mock().expectOneCall("task1");
 	mock().expectNoCall("task2");
-	mock().expectOneCall("powertask_storage_save");
 	mock().ignoreOtherCalls();
 
 	powertask_energy_source_t energy_src = {0};
 	powertask_run_scheduler(&scheduler, &energy_src);
 
+	/* Simulate system reset. Reset current state of the tasks. */
+	task_task1.complete = false;
+	task_task2.complete = false;
+
 	mock().expectOneCall("powertask_get_available_energy").andReturnValue(required_energy+1);
 
 	mock().expectNoCall("task1");
 	mock().expectOneCall("task2");
-	mock().expectOneCall("powertask_storage_save");
+	mock().ignoreOtherCalls();
 
 	powertask_run_scheduler(&scheduler, &energy_src);
 
 	mock().checkExpectations();
 }
 
-
+/**
+ * @brief Scheduler - Attempt to store more tasks than allowed on memory
+ * 
+ * The scope of this test is to validate if scheduler prevents storing more
+ * tasks than the maximum allowed.
+ * 
+ * It is expected the current state of the scheduler to not be stored in memory.  
+ */
 TEST(test_scheduler_regular, test_schedular_save_current_state_overflow){
 	const int load_current_state_max_number_of_tasks = 255;
 
@@ -357,3 +407,116 @@ TEST(test_scheduler_regular, test_schedular_save_current_state_overflow){
 
 	mock().checkExpectations();
 }
+
+/**
+ * @brief Scheduler - One task without assigned action
+ * 
+ * The scope of this test is to validate if tasks with no action assigned are
+ * handled correctly (avoiding segfault) and considers the task as completed
+ * since there is no reason for wasting time on processing it.
+ * 
+ * It is expected the system to not crash and the task to be marked as complete.
+ */
+TEST(test_scheduler_regular, test_single_task_with_no_action)
+{
+	const int required_energy = 400;
+
+	POWERTASK_INIT(scheduler, 2);
+
+	powertask_task task_with_no_action = {
+		.action = NULL,
+		.condition = condition_success,
+		.required_energy = required_energy,
+	};
+
+	powertask_add(&scheduler, &task_with_no_action);
+	
+	/* Having one more task that fails to complete will prevent the scheduler
+     * from reseting its internal state. 
+	 */
+	POWERTASK_TASK(scheduler, task1, task1, condition_fails, required_energy);
+	
+	mock().expectNCalls(2, "powertask_get_available_energy").andReturnValue(required_energy+1);
+	mock().ignoreOtherCalls();
+
+	powertask_energy_source_t energy_src = {0};
+	powertask_run_scheduler(&scheduler, &energy_src);
+
+	CHECK_TRUE(task_with_no_action.complete);
+
+	mock().checkExpectations();
+};
+
+/**
+ * @brief Scheduler - Task with no condition
+ * 
+ * The scope of this test is to validate the behaviour of the scheduler when a
+ * task without condition is attempt to be executed.
+ * 
+ * It is expected the task to be marked as complete.
+ */
+TEST(test_scheduler_regular, test_single_task_with_no_condition)
+{
+	const int required_energy = 400;
+
+	POWERTASK_INIT(scheduler, 2);
+
+	powertask_task task_with_no_condition = {
+		.action = task1,
+		.condition = NULL,
+		.required_energy = required_energy,
+	};
+
+	powertask_add(&scheduler, &task_with_no_condition);
+	
+	/* Having one more task that fails to complete will prevent the scheduler
+     * from reseting its internal state. 
+	 */
+	POWERTASK_TASK(scheduler, task2, task2, condition_fails, required_energy);
+	
+	mock().expectNCalls(2, "powertask_get_available_energy").andReturnValue(required_energy+1);
+	mock().ignoreOtherCalls();
+
+	powertask_energy_source_t energy_src = {0};
+	powertask_run_scheduler(&scheduler, &energy_src);
+
+	CHECK_TRUE(task_with_no_condition.complete);
+
+	mock().checkExpectations();
+};
+
+/**
+ * @brief Scheduler - Loaded scheduler state length mismatches recipient
+ * 
+ * The scope of this test is to validate the behaviour of the load state
+ * function when the number of stored tasks differs from the number of tasks in
+ * the scheduler.
+ * 
+ * It is expected the scheduler does not load the stored scheduler state.
+ */
+TEST(test_scheduler_regular, test_loaded_current_state_length_mismatch)
+{
+	const int required_energy = 400;
+
+	POWERTASK_INIT(stored_scheduler, 2);
+	POWERTASK_INIT(scheduler, 1);
+
+	POWERTASK_TASK(stored_scheduler, task1, task1, condition_success, required_energy);
+	POWERTASK_TASK(stored_scheduler, task2, task2, condition_fails, required_energy);
+
+	mock().expectNCalls(2, "powertask_get_available_energy").andReturnValue(required_energy+1);
+	mock().ignoreOtherCalls();
+
+	powertask_energy_source_t energy_src = {0};
+	powertask_run_scheduler(&stored_scheduler, &energy_src);
+
+	/* Simulate system reset. Reset current state of the tasks. */
+	task_task1.complete = false;
+	task_task2.complete = false;
+
+	CHECK(scheduler.number_of_tasks == 0);
+
+	powertask_run_scheduler(&scheduler, &energy_src);
+
+	CHECK(scheduler.number_of_tasks == 0);
+};

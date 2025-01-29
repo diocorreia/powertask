@@ -9,3 +9,5 @@ target_compile_options(test_scheduler PRIVATE -coverage)
 endif()
 
 target_link_libraries(test_scheduler CppUTest CppUTestExt PowerTask)
+
+add_test(NAME scheduler_module COMMAND test_scheduler)

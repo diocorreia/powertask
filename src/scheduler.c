@@ -28,6 +28,10 @@ static void save_current_state(powertask_scheduler *sched){
     struct current_state_s to_save;
 
     if(sched->number_of_tasks > ARRAY_LENGTH(to_save.tasks_state)){
+        /* TODO: Review this behaviour. Does it make sense to simply not
+         * store the current state? This changes the expected behaviour of the
+         * program.
+         */
         return;
     }
 
@@ -97,15 +101,18 @@ void powertask_run_scheduler(powertask_scheduler *sched, powertask_energy_source
             continue;
         }
 
-        if(!current_task->condition()){
-            continue;
+        if(current_task->condition != NULL) {
+            if(!current_task->condition()){
+                continue;
+            }
         }
 
         if(current_task->action != NULL){
             current_task->action();
-            current_task->complete = true;
-            complete_tasks++;
         }
+        
+        current_task->complete = true;
+        complete_tasks++;
     }
 
     if(complete_tasks == sched->number_of_tasks){
