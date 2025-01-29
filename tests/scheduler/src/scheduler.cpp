@@ -333,6 +333,16 @@ TEST(test_scheduler_regular, test_schedular_state_is_reset_after_all_tasks_are_c
 	mock().checkExpectations();
 };
 
+/**
+ * @brief Scheduler - Store current state successfully
+ * 
+ * The scope of this test is to validate if the current state of the tasks
+ * (complete or not complete) is stored after the scheduler is ran. And that
+ * these states are correctly loaded on the second execution of the scheduler.
+ * 
+ * It is expected task1 to be executed on the first run of the scheduler and
+ * task2 on the second.
+*/
 TEST(test_scheduler_regular, test_schedular_current_state_is_stored){
 	const int required_energy = 400;
 
@@ -346,24 +356,34 @@ TEST(test_scheduler_regular, test_schedular_current_state_is_stored){
 
 	mock().expectOneCall("task1");
 	mock().expectNoCall("task2");
-	mock().expectOneCall("powertask_storage_save");
 	mock().ignoreOtherCalls();
 
 	powertask_energy_source_t energy_src = {0};
 	powertask_run_scheduler(&scheduler, &energy_src);
 
+	/* Simulate system reset. Reset current state of the tasks. */
+	task_task1.complete = false;
+	task_task2.complete = false;
+
 	mock().expectOneCall("powertask_get_available_energy").andReturnValue(required_energy+1);
 
 	mock().expectNoCall("task1");
 	mock().expectOneCall("task2");
-	mock().expectOneCall("powertask_storage_save");
+	mock().ignoreOtherCalls();
 
 	powertask_run_scheduler(&scheduler, &energy_src);
 
 	mock().checkExpectations();
 }
 
-
+/**
+ * @brief Scheduler - Attempt to store more tasks than allowed on memory
+ * 
+ * The scope of this test is to validate if scheduler prevents storing more
+ * tasks than the maximum allowed.
+ * 
+ * It is expected the current state of the scheduler to not be stored in memory.  
+ */
 TEST(test_scheduler_regular, test_schedular_save_current_state_overflow){
 	const int load_current_state_max_number_of_tasks = 255;
 
@@ -388,6 +408,15 @@ TEST(test_scheduler_regular, test_schedular_save_current_state_overflow){
 	mock().checkExpectations();
 }
 
+/**
+ * @brief Scheduler - One task without assigned action
+ * 
+ * The scope of this test is to validate if tasks with no action assigned are
+ * handled correctly (avoiding segfault) and considers the task as completed
+ * since there is no reason for wasting time on processing it.
+ * 
+ * It is expected the system to not crash and the task to be marked as complete.
+ */
 TEST(test_scheduler_regular, test_single_task_with_no_action)
 {
 	const int required_energy = 400;
@@ -418,6 +447,14 @@ TEST(test_scheduler_regular, test_single_task_with_no_action)
 	mock().checkExpectations();
 };
 
+/**
+ * @brief Scheduler - Task with no condition
+ * 
+ * The scope of this test is to validate the behaviour of the scheduler when a
+ * task without condition is attempt to be executed.
+ * 
+ * It is expected the task to be marked as complete.
+ */
 TEST(test_scheduler_regular, test_single_task_with_no_condition)
 {
 	const int required_energy = 400;
@@ -448,6 +485,15 @@ TEST(test_scheduler_regular, test_single_task_with_no_condition)
 	mock().checkExpectations();
 };
 
+/**
+ * @brief Scheduler - Loaded scheduler state length mismatches recipient
+ * 
+ * The scope of this test is to validate the behaviour of the load state
+ * function when the number of stored tasks differs from the number of tasks in
+ * the scheduler.
+ * 
+ * It is expected the scheduler does not load the stored scheduler state.
+ */
 TEST(test_scheduler_regular, test_loaded_current_state_length_mismatch)
 {
 	const int required_energy = 400;
